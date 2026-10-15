@@ -12,6 +12,7 @@ Keep evolving implementation decisions and development notes here. Put stable se
 - Run the expiry cleanup hourly when the API is running, and once during API startup.
 - Deploy the single Compose service to `eobkwaku@eobserver:/home/eobkwaku/pdf-converter` from Jenkins. The pipeline targets branch `trunk`, uses credential ID `pdf-toolkit-deploy-key`, requires a clean remote checkout, and preserves the generated-file volume.
 - In production, the existing `campushostels_nginx` Docker container owns public ports 80 and 443. Paperplane joins its external `campushostels_campushostels_net` via `compose.production.yaml`, and Nginx proxies the `pdf-gh.giize.com` virtual host to `paperplane:8080`. Keep the mounted Nginx config under `/home/eobkwaku/jenkins-docker/CampusHostels/nginx/conf.d` and the certificate under the existing `/etc/letsencrypt` mount.
+- Renew `pdf-gh.giize.com` through the separate Jenkins job configured with `Jenkinsfile.cert-renewal`; Certbot uses its Dynu DNS hooks and reloads the Docker Nginx only after renewal.
 
 ## Operational follow-ups
 

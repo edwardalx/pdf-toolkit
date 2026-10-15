@@ -66,6 +66,12 @@ docker exec campushostels_nginx nginx -s reload
 
 The template allows up to 2 GB request bodies for the app's configured 20-file merge limit at 100 MB per file. DNS for `pdf-gh.giize.com` must point to this server and inbound ports 80 and 443 must be allowed. Preserve the other virtual hosts in the shared Nginx config directory.
 
+### Renew the PDF certificate with Jenkins
+
+Create a separate Jenkins Pipeline job for certificate renewal and configure it as **Pipeline script from SCM**, using this repository, branch `trunk`, and script path `Jenkinsfile.cert-renewal`. The pipeline checks weekly; Certbot renews only when needed and runs the existing Dynu authentication/cleanup hooks from its renewal configuration. Nginx is validated and reloaded only after a successful renewal.
+
+The SSH account used by `pdf-toolkit-deploy-key` must be allowed to run the configured Certbot commands through `sudo` without a password. The pipeline uses `sudo -n`, so it fails promptly if that permission is not configured; do not put a sudo password or Dynu token in Jenkinsfile or Git. The Nginx container must be running when renewal happens so Certbot's deploy hook can validate and reload it.
+
 ### Prepare the server once
 
 1. Install Docker Engine and the Docker Compose plugin on `eobserver`. Give `eobkwaku` permission to run Docker, then start a fresh login session and confirm `docker compose version` works.

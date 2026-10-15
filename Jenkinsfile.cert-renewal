@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    // Certbot renews only when the certificate is approaching expiry.
+    // Jenkins' H spreads this weekly check across jobs/controllers.
+    triggers {
+        cron('H 3 * * 1')
+    }
+
+    environment {
+        DEPLOY_HOST           = 'eobserver'
+        DEPLOY_CREDENTIALS_ID = 'pdf-toolkit-deploy-key'
+        CERTBOT_BIN           = '/home/eobkwaku/certbot-venv/bin/certbot'
+        CERT_NAME             = 'pdf-gh.giize.com'
+        NGINX_CONTAINER       = 'campushostels_nginx'
+    }
+
+    stages {
+        stage('Renew certificate if due') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: "${DEPLOY_CREDENTIALS_ID}",
+                    keyFileVariable: 'DEPLOY_KEY',
+                    usernameVariable: 'SSH_USERNAME'
+                )]) {
+                    sh '''
+                        set -eu
+
+                        ssh -i "$DEPLOY_KEY" \
+                            -o BatchMode=yes \
+                            -o IdentitiesOnly=yes \
+                            -o StrictHostKeyChecking=yes \
+                            "$SSH_USERNAME@$DEPLOY_HOST" \
+                            bash -s -- "$CERTBOT_BIN" "$CERT_NAME" "$NGINX_CONTAINER" <<'REMOTE'
+                        set -eu
+                        certbot_bin="$1"
+                        cert_name="$2"
+                        nginx_container="$3"
+
+                        if [ ! -x "$certbot_bin" ]; then
+                            echo "Certbot executable not found: $certbot_bin" >&2
+                            exit 1
+                        fi
+
+                        if ! docker ps --format '{{.Names}}' | grep -qx "$nginx_container"; then
+                            echo "Nginx container is not running: $nginx_container" >&2
+                            exit 1
+                        fi
+
+                        # Certbot runs this deploy hook only after a successful renewal.
+                        # Validate Nginx before reloading it with the renewed certificate.
+                        deploy_hook="docker exec $nginx_container nginx -t && docker exec $nginx_container nginx -s reload"
+
+                        echo "Checking renewal status for $cert_name..."
+                        sudo -n "$certbot_bin" renew \
+                            --cert-name "$cert_name" \
+                            --non-interactive \
+                            --deploy-hook "$deploy_hook"
+
+                        echo "Current certificate details:"
+                        sudo -n "$certbot_bin" certificates --cert-name "$cert_name"
+REMOTE
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Certificate renewal check completed successfully.'
+        }
+        failure {
+            echo 'Certificate renewal check failed. Review this build and /var/log/letsencrypt/letsencrypt.log on eobserver.'
+        }
+    }
+}
