@@ -28,7 +28,7 @@ Use this skill for work in this repository. Read [README.md](../../../README.md)
 - The target server checkout must have a clean working tree, be on the configured deployment branch, and have an `origin` remote. The pipeline uses a fast-forward-only pull and aborts on local edits; do not replace this with `git stash`, `git reset --hard`, or `docker compose down`.
 - Keep SSH host-key checking enabled. Do not add credentials, private keys, or `StrictHostKeyChecking=no` to the pipeline.
 - Deployment rebuilds the single Compose service, which serves both the API and built frontend. It waits for `/api/health` from inside the service. Keep generated files in the named Docker volume across deployments.
-- Production Nginx should use a dedicated virtual host for Paperplane and proxy the entire origin (frontend and `/api`) to `127.0.0.1:8080`. Compose binds only to loopback by default; keep the separate Bookshelf virtual host untouched.
+- Production Nginx should use a dedicated virtual host for Paperplane and proxy the entire origin (frontend and `/api`) to `127.0.0.1:8081`. Compose binds the app's container port 8080 to loopback host port 8081 by default; keep the separate Bookshelf virtual host untouched.
 - Do not run the production Jenkins deployment unless the user explicitly asks. Prepare and review the configuration and instructions first.
 
 ## Documentation and verification

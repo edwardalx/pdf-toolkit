@@ -6,7 +6,7 @@ services:
     environment:
       PAPERPLANE_STORAGE_DIR: /data
     ports:
-      - "127.0.0.1:${PORT:-8080}:8080"
+      - "127.0.0.1:${PORT:-8081}:8080"
     init: true
     read_only: true
     tmpfs:
