@@ -11,7 +11,7 @@ Keep evolving implementation decisions and development notes here. Put stable se
 - Show generated files in the “Ready to download” section. The list is scoped to the browser workspace; clearing that browser's local storage removes its access to the list.
 - Run the expiry cleanup hourly when the API is running, and once during API startup.
 - Deploy the single Compose service to `eobkwaku@eobserver:/home/eobkwaku/pdf-converter` from Jenkins. The pipeline targets branch `trunk`, uses credential ID `pdf-toolkit-deploy-key`, requires a clean remote checkout, and preserves the generated-file volume.
-- In production, serve the combined frontend/API behind a separate Nginx virtual host; Compose publishes the app at `127.0.0.1:8081` by default because Jenkins occupies port 8080 on the target server.
+- In production, the existing `campushostels_nginx` Docker container owns public ports 80 and 443. Paperplane joins its external `campushostels_campushostels_net` via `compose.production.yaml`, and Nginx proxies the `pdf-gh.giize.com` virtual host to `paperplane:8080`. Keep the mounted Nginx config under `/home/eobkwaku/jenkins-docker/CampusHostels/nginx/conf.d` and the certificate under the existing `/etc/letsencrypt` mount.
 
 ## Operational follow-ups
 

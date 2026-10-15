@@ -1,0 +1,12 @@
+# Production-only network attachment lets the existing Docker Nginx reverse
+# proxy reach Paperplane directly. Keep local development on compose.yaml alone.
+services:
+  paperplane:
+    networks:
+      - default
+      - campushostels_proxy
+
+networks:
+  campushostels_proxy:
+    external: true
+    name: campushostels_campushostels_net

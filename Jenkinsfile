@@ -76,14 +76,14 @@ pipeline {
                         # 3. Build and start the stack
                         # ------------------------------------------------------------
                         echo "Building and starting Paperplane..."
-                        docker compose up -d --build --remove-orphans
+                        docker compose -f compose.yaml -f compose.production.yaml up -d --build --remove-orphans
 
                         # ------------------------------------------------------------
                         # 4. Health check
                         # ------------------------------------------------------------
                         echo "Waiting for the API health check..."
                         for attempt in $(seq 1 30); do
-                            if docker compose exec -T paperplane \
+                            if docker compose -f compose.yaml -f compose.production.yaml exec -T paperplane \
                                 python -c "from urllib.request import urlopen; urlopen('http://127.0.0.1:8080/api/health', timeout=3)" \
                                 >/dev/null 2>&1; then
                                 docker compose ps
@@ -95,7 +95,7 @@ pipeline {
                         done
 
                         echo "Health check did not pass. Recent service logs:"
-                        docker compose logs --tail=100 paperplane
+                        docker compose -f compose.yaml -f compose.production.yaml logs --tail=100 paperplane
                         exit 1
 REMOTE
                     '''

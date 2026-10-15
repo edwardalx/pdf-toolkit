@@ -52,25 +52,19 @@ Docker Compose stores generated files in the persistent `paperplane_data` volume
 
 The app is built as one Docker Compose service: FastAPI serves the compiled React frontend as well as the API. Nginx should proxy the whole hostname to the app; the FE and API share one origin. Generated files remain in the named `paperplane_data` volume across deployments. The checked-in [Jenkinsfile](Jenkinsfile) deploys branch `trunk` to `eobkwaku@eobserver:/home/eobkwaku/pdf-converter`.
 
-The production FE URL is `https://pdf-converter.duckdns.org/`, once its DNS record and TLS certificate are set up. The API is under the same origin at `/api`. On the server itself, Nginx proxies to `http://127.0.0.1:8081`; Compose binds the app's container port 8080 to host loopback port 8081, so clients use Nginx rather than the container port directly.
+The production FE URL is `https://pdf-gh.giize.com/`; the API is under the same origin at `/api`. The public ports 80 and 443 are owned by the existing `campushostels_nginx` Docker container, so configure that container's mounted Nginx directory at `/home/eobkwaku/jenkins-docker/CampusHostels/nginx/conf.d`, not the host's `/etc/nginx/sites-available`.
 
-Separate Nginx site templates are provided: [HTTP bootstrap](deploy/nginx-paperplane-http.conf.example) for certificate issuance and [HTTPS site](deploy/nginx-paperplane.conf.example) for normal operation. They do not change the Bookshelf site's document root or server block. Create a DNS record for `pdf-converter.duckdns.org` pointing to this server and allow inbound ports 80 and 443. On the server, run these commands to enable the temporary HTTP site and obtain a certificate:
+The production overlay [compose.production.yaml](compose.production.yaml) attaches Paperplane to the existing `campushostels_campushostels_net` Docker network. Jenkins deploys with this overlay; the normal `compose.yaml` remains suitable for local development. The Nginx templates proxy to `http://paperplane:8080` over that shared network. Keep the Let's Encrypt certificate for `pdf-gh.giize.com` available in the existing `/etc/letsencrypt` mount. This server issues/renews it using the configured Dynu DNS hooks.
 
-```sh
-sudo cp /home/eobkwaku/pdf-converter/deploy/nginx-paperplane-http.conf.example /etc/nginx/sites-available/pdf-converter
-sudo ln -s /etc/nginx/sites-available/pdf-converter /etc/nginx/sites-enabled/pdf-converter
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot certonly --nginx -d pdf-converter.duckdns.org
-```
-
-After the certificate exists, replace the bootstrap config with the HTTPS template and reload Nginx:
+After committing and pushing changes to `trunk`, run the Jenkins deployment so Paperplane joins the shared network. Then install the HTTPS virtual host into the mounted Nginx config directory and reload the container:
 
 ```sh
-sudo cp /home/eobkwaku/pdf-converter/deploy/nginx-paperplane.conf.example /etc/nginx/sites-available/pdf-converter
-sudo nginx -t && sudo systemctl reload nginx
+cp /home/eobkwaku/pdf-converter/deploy/nginx-paperplane.conf.example /home/eobkwaku/jenkins-docker/CampusHostels/nginx/conf.d/pdf-gh.conf
+docker exec campushostels_nginx nginx -t
+docker exec campushostels_nginx nginx -s reload
 ```
 
-The HTTPS template allows up to 2 GB request bodies to cover the app's configured 20-file merge limit at 100 MB per file; adjust it if you choose a lower upload policy. If you set a Compose `PORT`, update `proxy_pass` to match. The default host port is 8081 because Jenkins already uses 8080 on this server.
+The template allows up to 2 GB request bodies for the app's configured 20-file merge limit at 100 MB per file. DNS for `pdf-gh.giize.com` must point to this server and inbound ports 80 and 443 must be allowed. Preserve the other virtual hosts in the shared Nginx config directory.
 
 ### Prepare the server once
 
