@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { font-family: 'DM Sans', sans-serif; color: #222b3a; background: #f7f8fa; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-optical-sizing: auto; font-weight: 400; }
+* { box-sizing: border-box; }
+body { min-width: 320px; margin: 0; background: radial-gradient(ellipse at 50% -25%, #edf0ff 0, transparent 50%), #f7f8fa; }
