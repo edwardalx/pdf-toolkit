@@ -1,7 +1,7 @@
 FROM node:22-alpine AS frontend-build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 COPY vite.config.js tailwind.config.js postcss.config.js tsconfig.json ./
 COPY index.html ./
 COPY src ./src

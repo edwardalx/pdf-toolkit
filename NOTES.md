@@ -10,6 +10,8 @@ Keep evolving implementation decisions and development notes here. Put stable se
 - Retain generated files for seven days in server storage, outside the application source directory. In Docker Compose, use the persistent `paperplane_data` volume mounted at `/data`.
 - Show generated files in the “Ready to download” section. The list is scoped to the browser workspace; clearing that browser's local storage removes its access to the list.
 - Run the expiry cleanup hourly when the API is running, and once during API startup.
+- Deploy the single Compose service to `eobkwaku@eobserver:/home/eobkwaku/pdf-converter` from Jenkins. The pipeline targets branch `trunk`, uses credential ID `pdf-toolkit-deploy-key`, requires a clean remote checkout, and preserves the generated-file volume.
+- In production, serve the combined frontend/API behind a separate Nginx virtual host; Compose publishes the app only at `127.0.0.1:8080` by default.
 
 ## Operational follow-ups
 
