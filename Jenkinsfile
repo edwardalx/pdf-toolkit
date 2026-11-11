@@ -102,14 +102,42 @@ REMOTE
                 }
             }
         }
+
+        stage('Sync nginx vhost') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: "${DEPLOY_CREDENTIALS_ID}",
+                    keyFileVariable: 'DEPLOY_KEY',
+                    usernameVariable: 'SSH_USERNAME'
+                )]) {
+                    sh '''
+                        set -eu
+                        ssh -i "$DEPLOY_KEY" \
+                            -o BatchMode=yes \
+                            -o IdentitiesOnly=yes \
+                            -o StrictHostKeyChecking=yes \
+                            "$SSH_USERNAME@$DEPLOY_HOST" \
+                            "set -eu
+                            cd '$PROJECT_DIR'
+                            echo 'Syncing nginx vhost...'
+                            sudo -n cp deploy/nginx-paperplane.conf /etc/nginx/sites-enabled/pdf-gh
+                            echo 'Testing nginx config...'
+                            sudo -n nginx -t
+                            echo 'Reloading nginx...'
+                            sudo -n systemctl reload nginx
+                            echo 'nginx vhost synced and reloaded.'"
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Paperplane deployment completed successfully.'
+            echo 'Paperplane deployment and nginx sync completed successfully.'
         }
         failure {
-            echo 'Paperplane deployment failed. Review the deploy stage output and remote Compose logs.'
+            echo 'Paperplane deployment or nginx sync failed. Review the stage output.'
         }
     }
 }
