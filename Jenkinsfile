@@ -55,20 +55,28 @@ pipeline {
                         cd "$project_dir"
 
                         # ------------------------------------------------------------
-                        # 2. Fetch and force the checkout onto origin/$deploy_branch
+                        # 2. Verify the checkout and fast-forward to origin/$deploy_branch
                         # ------------------------------------------------------------
-                        echo "Fetching origin/$deploy_branch..."
-                        git fetch --prune origin "$deploy_branch"
-
-                        current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+                        current_branch="$(git rev-parse --abbrev-ref HEAD)"
                         if [ "$current_branch" != "$deploy_branch" ]; then
-                            echo "Switching from '$current_branch' to '$deploy_branch'..."
-                            git checkout -B "$deploy_branch" "origin/$deploy_branch"
+                            echo "Expected branch '$deploy_branch', found '$current_branch'." >&2
+                            exit 1
                         fi
 
-                        # Deploy box → always converge to the exact remote commit
-                        git reset --hard "origin/$deploy_branch"
-                        git clean -fdx -e .env  # keep a local .env if you maintain one
+                        if [ -n "$(git status --porcelain)" ]; then
+                            echo "Working tree is not clean; refusing to deploy." >&2
+                            git status --short
+                            exit 1
+                        fi
+
+                        # Existing checkouts may have a stale SSH origin. Use the
+                        # configured URL, which allows public HTTPS repositories
+                        # to fetch without server-side GitHub SSH credentials.
+                        git remote set-url origin "$repo_url"
+
+                        echo "Fetching origin/$deploy_branch..."
+                        git fetch --prune origin "$deploy_branch"
+                        git pull --ff-only origin "$deploy_branch"
 
                         echo "Deploying commit $(git rev-parse --short HEAD) on branch $(git rev-parse --abbrev-ref HEAD)"
 
